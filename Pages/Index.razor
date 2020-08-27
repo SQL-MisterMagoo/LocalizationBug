@@ -1,0 +1,55 @@
+﻿@page "/"
+@using Microsoft.Extensions.Localization
+@using System.Globalization
+@inject IStringLocalizer<Index> L
+@inject IJSRuntime JS
+@inject NavigationManager NM
+
+<h1>Localization bug - behaviour is different in WebAssembly compared to Server</h1>
+<article>Instructions: Change the Current UI Culture - nothing happens
+--- Change the Current Culture - the UI changes culture</article>
+<br />
+<hr />
+<h2>The time locally is @DateTime.Now</h2>
+
+<table class="table">
+    <caption>Chosen culture combinations (cc/ui) : @ccname / @uiname </caption>
+    <tr>
+        <th>&nbsp;</th>
+        <th>@L["English"]</th>
+        <th>@L["French"]</th>
+    </tr>
+    <tr>
+        <td>CurrentCulture</td>
+        <td><button @onclick=@(()=>SetCulture("en")) disabled="@(ccname.StartsWith("en",StringComparison.OrdinalIgnoreCase))">Set</button></td>
+        <td><button @onclick=@(()=>SetCulture("fr")) disabled="@(ccname.StartsWith("fr",StringComparison.OrdinalIgnoreCase))">Set</button></td>
+    </tr>
+    <tr>
+        <td>CurrentUICulture</td>
+        <td><button @onclick=@(()=>SetUICulture("en")) disabled="@(uiname.StartsWith("en",StringComparison.OrdinalIgnoreCase))">Set</button></td>
+        <td><button @onclick=@(()=>SetUICulture("fr")) disabled="@(uiname.StartsWith("fr",StringComparison.OrdinalIgnoreCase))">Set</button></td>
+    </tr>
+</table>
+
+@code
+{
+    string ccname, uiname;
+
+    protected override void OnInitialized()
+    {
+        ccname = CultureInfo.CurrentCulture.Name;
+        uiname = CultureInfo.CurrentUICulture.Name;
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", "culture", ccname);
+            await JS.InvokeVoidAsync("localStorage.setItem", "uiculture", uiname);
+            NM.NavigateTo(NM.Uri, true);
+        }
+    }
+    void SetCulture(string culture) => ccname = culture;
+    void SetUICulture(string culture) => uiname = culture;
+    //
+}
